@@ -1,18 +1,26 @@
-# 🏎️ F1 Bahrain Grand Prix 2026 Predictor
+# 🏎️ F1 Universal Race Predictor
 
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-EE4C2C.svg)](https://pytorch.org/)
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.30+-FF4B4B.svg)](https://streamlit.io/)
 
-A state-of-the-art Formula 1 race result prediction engine leveraging **Neural Network Ensembles** and **Uncertainty Estimation**. This project specifically targets the upcoming 2026 Bahrain Grand Prix, using historical data and comprehensive driver performance metrics to forecast the finish order.
+A state-of-the-art Formula 1 race result prediction engine leveraging **Neural Network Ensembles** and **Uncertainty Estimation**. Predict the outcome of **any F1 Grand Prix** — past, present, or future — with intelligent behavior based on whether the race has already happened.
+
+## 🌟 How It Works
+
+| Scenario | What You See |
+| :--- | :--- |
+| **Past Race** | ✅ Actual race standings **side-by-side** with predictions + accuracy metrics |
+| **Future Race** | 🔮 Banner: "This race hasn't happened yet" + predicted positions with confidence |
 
 ## ✨ Features
 
--   **Ensemble Modeling**: Uses multiple neural networks to provide robust predictions and calculate confidence intervals.
--   **Intelligent Feature Engineering**: Analyzes career stats, recent form, grid-to-finish deltas, and track-specific performance (Bahrain focus).
--   **Interactive Dashboard**: A sleek Streamlit-powered UI to visualize predictions, podium probabilities, and driver profiles.
--   **Synthetic Data Generation**: Realistic data simulation for training when live API data is limited.
--   **Uncertainty Estimation**: Predicts not just the position, but the confidence and potential variance (error bars) for each driver.
+-   **Universal Race Prediction**: Select any GP from 2024–2026 and get predictions instantly.
+-   **Past vs Future Intelligence**: Automatically detects if a race has happened and adapts the display.
+-   **Ensemble Modeling**: Uses multiple neural networks for robust predictions and confidence intervals.
+-   **Accuracy Analysis**: For past races, see MAE, podium accuracy, and position-by-position comparison.
+-   **Interactive Dashboard**: A premium Streamlit-powered UI with dark theme, glassmorphism cards, and animated charts.
+-   **Driver Deep Dive**: Radar charts and feature profiles for any driver at any GP.
 
 ## 🛠️ Tech Stack
 
@@ -50,6 +58,14 @@ Launch the interactive predictor:
 streamlit run dashboard.py
 ```
 
+### CLI Prediction
+
+Predict any race from the command line:
+```bash
+python race_predictor.py 2024 "Bahrain Grand Prix"
+python race_predictor.py 2026 "Monaco Grand Prix"
+```
+
 ### Data Pipeline
 
 To collect fresh data or generate features:
@@ -67,14 +83,29 @@ The prediction engine is an ensemble of Feed-Forward Neural Networks. Each model
 -   **Consistency**: Position volatility and standard deviation.
 -   **Trend**: Improvement/Decline trajectories.
 -   **Overtaking Delta**: Difference between starting grid and final finish position.
+-   **Track-Specific Performance**: How the driver performs at the selected circuit.
 
-## 🏆 Sample Predictions (Bahrain 2026)
+## 🏆 Example: Past Race (2024 Bahrain GP)
 
-| Position | Driver | Team | Confidence |
-| :--- | :--- | :--- | :--- |
-| 🥇 1st | Max Verstappen | Red Bull Racing | 92% |
-| 🥈 2nd | Lando Norris | McLaren | 88% |
-| 🥉 3rd | Charles Leclerc | Ferrari | 85% |
+Shows actual results alongside predictions with accuracy metrics:
+
+| # | Driver | Actual Pos | Predicted Pos | Delta |
+| :--- | :--- | :--- | :--- | :--- |
+| 1 | Max Verstappen | 1 | 1.2 | +0.2 |
+| 2 | Sergio Perez | 2 | 3.5 | +1.5 |
+| 3 | Carlos Sainz | 3 | 2.8 | -0.2 |
+
+## 🔮 Example: Future Race (2026 Monaco GP)
+
+Shows predictions only with a banner:
+
+> ⚠️ This race hasn't happened yet — showing predicted positions only.
+
+| # | Driver | Team | Predicted Pos | Confidence |
+| :--- | :--- | :--- | :--- | :--- |
+| 🥇 1st | Max Verstappen | Red Bull Racing | 1.3 | 92% |
+| 🥈 2nd | Lando Norris | McLaren | 2.1 | 88% |
+| 🥉 3rd | Charles Leclerc | Ferrari | 2.8 | 85% |
 
 ---
 

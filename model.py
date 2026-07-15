@@ -1,4 +1,5 @@
 """PyTorch neural network model for F1 position prediction."""
+# pyrefly: ignore [missing-import]
 import torch
 import torch.nn as nn
 import numpy as np

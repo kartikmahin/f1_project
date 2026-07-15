@@ -1,4 +1,7 @@
-"""Data collection and preprocessing pipeline for F1 predictions."""
+"""Data collection and preprocessing pipeline for F1 predictions.
+
+Supports any Grand Prix track — not just Bahrain.
+"""
 import os
 import fastf1
 import pandas as pd
@@ -67,12 +70,11 @@ def create_sample_data():
         "Monaco Grand Prix", "Canadian Grand Prix", "Spanish Grand Prix",
         "British Grand Prix", "Austrian Grand Prix", "Belgian Grand Prix",
         "Dutch Grand Prix", "Italian Grand Prix", "Singapore Grand Prix",
-        "Azerbaijan Grand Prix", "United States Grand Prix", "Mexico Grand Prix",
-        "Brazil Grand Prix", "Abu Dhabi Grand Prix",
+        "Azerbaijan Grand Prix", "United States Grand Prix", "Mexico City Grand Prix",
+        "São Paulo Grand Prix", "Abu Dhabi Grand Prix",
+        "Emilia Romagna Grand Prix", "Hungarian Grand Prix", "Las Vegas Grand Prix",
+        "Qatar Grand Prix",
     ]
-
-    # Map old driver codes to new for 2024 data
-    legacy_map = {"ANO": "BOT", "DOO": "OCO2", "BOR": "ZHO", "BEA": "MAG"}
 
     for year in years:
         for gp in gps:
@@ -80,11 +82,14 @@ def create_sample_data():
             for d in drivers:
                 # Add randomness around base performance
                 noise = np.random.normal(0, 2.5)
-                # Bahrain-specific: some drivers perform better there
-                bahrain_bonus = 0
-                if "Bahrain" in gp:
-                    bahrain_bonus = np.random.normal(-0.3 if performance[d] < 5 else 0.3, 0.5)
-                base_perf[d] = performance[d] + noise + bahrain_bonus
+                # Track-specific bonus: some drivers excel at certain tracks
+                track_bonus = 0
+                track_hash = hash(gp + d) % 10
+                if track_hash < 3:
+                    track_bonus = np.random.normal(-0.5, 0.5)
+                elif track_hash > 7:
+                    track_bonus = np.random.normal(0.3, 0.5)
+                base_perf[d] = performance[d] + noise + track_bonus
 
             sorted_drivers = sorted(base_perf.items(), key=lambda x: x[1])
             for pos, (driver, score) in enumerate(sorted_drivers, 1):
@@ -112,8 +117,15 @@ def create_sample_data():
     return df
 
 
-def engineer_features(df, target_drivers=None):
-    """Build feature matrix from historical race data."""
+def engineer_features(df, target_gp=None, target_drivers=None):
+    """Build feature matrix from historical race data.
+
+    Args:
+        df: Historical race results DataFrame.
+        target_gp: The GP name to compute track-specific features for.
+                    If None, track features default to overall averages.
+        target_drivers: List of driver abbreviations. Defaults to DRIVERS_2026.
+    """
     if target_drivers is None:
         target_drivers = list(DRIVERS_2026.keys())
 
@@ -149,10 +161,16 @@ def engineer_features(df, target_drivers=None):
         # Position volatility (consistency measure)
         volatility = abs(driver_df["Position"].diff()).mean() if total_races > 1 else 0
 
-        # Bahrain-specific performance
-        bahrain_df = driver_df[driver_df["GrandPrix"].str.contains("Bahrain", na=False)]
-        bahrain_avg = bahrain_df["Position"].mean() if len(bahrain_df) > 0 else avg_pos
-        bahrain_count = len(bahrain_df)
+        # Track-specific performance (generic — works for any GP)
+        if target_gp:
+            track_df = driver_df[driver_df["GrandPrix"].str.contains(
+                target_gp.replace("Grand Prix", "").strip(), na=False, case=False
+            )]
+        else:
+            track_df = pd.DataFrame()
+
+        track_avg = track_df["Position"].mean() if len(track_df) > 0 else avg_pos
+        track_count = len(track_df)
 
         # Trend (improving or declining)
         if total_races >= 4:
@@ -175,21 +193,26 @@ def engineer_features(df, target_drivers=None):
             "position_volatility": round(float(volatility), 2),
             "avg_grid": round(float(avg_grid), 2),
             "grid_to_finish_delta": round(float(grid_delta), 2),
-            "bahrain_avg_position": round(float(bahrain_avg), 2),
-            "bahrain_races_count": bahrain_count,
+            "track_avg_position": round(float(track_avg), 2),
+            "track_races_count": track_count,
             "recent_avg_pos": round(float(recent_avg_pos), 2),
             "recent_points": round(float(recent_points), 1),
             "recent_std": round(float(recent_std), 2),
             "trend": round(float(trend), 2),
-            # Target: average Bahrain position (what we want to predict)
-            "target": round(float(bahrain_avg), 2) if len(bahrain_df) > 0 else round(float(avg_pos), 2),
+            # Target: track-specific avg position (what we predict)
+            "target": round(float(track_avg), 2) if track_count > 0 else round(float(avg_pos), 2),
         })
 
     return pd.DataFrame(features_list)
 
 
-def prepare_training_data(df=None):
-    """Load data and prepare feature matrix for training."""
+def prepare_training_data(df=None, target_gp=None):
+    """Load data and prepare feature matrix for training.
+
+    Args:
+        df: Optional pre-loaded DataFrame.
+        target_gp: GP name for track-specific features.
+    """
     if df is None:
         path = os.path.join(DATA_DIR, "all_race_results.csv")
         if not os.path.exists(path):
@@ -198,7 +221,7 @@ def prepare_training_data(df=None):
         else:
             df = pd.read_csv(path)
 
-    features_df = engineer_features(df)
+    features_df = engineer_features(df, target_gp=target_gp)
 
     from config import FEATURE_COLUMNS
     X = features_df[FEATURE_COLUMNS].values.astype(np.float32)
